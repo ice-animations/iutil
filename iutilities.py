@@ -424,6 +424,9 @@ def profile(sort='cumulative', lines=50, strip_dirs=False):
     return outer
 
 
+def getDirs(path):
+    if path and op.exists(path):
+        return os.listdir(path)
 
 if __name__ == "__main__":
     file_path = "d:/user_files/hussain.parsaiyan/desktop"
