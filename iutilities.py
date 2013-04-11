@@ -58,6 +58,16 @@ def relpath(path, start=curdir):
     return join(*rel_list)
 op.relpath = relpath
 
+def getTemp(mkd = False, suffix = "", prefix = "tmp", directory = None):
+    tmp = getattr(tempfile,
+                  "mkdtemp" if mkd else "mkstemp")(suffix = suffix,
+                                                             prefix = prefix,
+                                                             dir = directory)
+    if mkd: return tmp
+    else:
+        os.close(tmp[0])
+        return tmp[1]
+
 def mayaFile(path):
     '''
     @return True if the file ends with extensions else False
@@ -140,14 +150,12 @@ def archive(file_path, file_name, copy = False, alternatePath = ""):
                 if op.getsize(fileToArchive) == op.getsize(op.join(finalPath, filter(lambda theFile: op.isfile(op.join(finalPath, theFile)), os.listdir(finalPath))[0])):
                     return op.join(finalPath, file_name) # redundant code
                 else:
-                    date = date + "_" + str(100000 * randomNumber())
-                    finalPath = op.join(fileArchive, date)
+                    finalPath = getTemp(prefix = date + "_", mkd = True, directory = fileArchive )
             except BaseException as e:
                 print e
     else:
         pass
         
-    if not op.exists(finalPath): os.mkdir(finalPath)
     #print op.join(file_path, file_name), finalPath
     if copy: shutil.copy2(fileToArchive, finalPath)
     else: shutil.move(fileToArchive, finalPath)
@@ -216,21 +224,20 @@ def haveWritePermission(path, *arg, **kwarg):
     '''
     path = normpath(path)
     try:
-        temp = str(int(randomNumber()*1000))*5
-        os.mkdir(op.join(path, temp))
-        os.rmdir(op.join(path, temp))
+        os.remove(getTemp(directory = path))
         return True
-    except WindowsError:
+    except OSError, WindowsError:
         if kwarg.get("sub"):
+            count = 1
             # check if the user has write permissions in subsequent subdirs
             for fl, fds, fls in os.walk(path):
+                if count > 50: break
                 for fd in fds:
+                    count += 1
                     try:
-                        temp = str(int(randomNumber()*1000))*5
-                        os.mkdir(op.join(fl, fd, temp))
-                        os.rmdir(op.join(fl, fd, temp))
+                        os.remove(getTemp(directory = op.join(fl, fd)))
                         return True
-                    except WindowsError as e:
+                    except OSError, WindowsError:
                         continue
             return False
         else:
