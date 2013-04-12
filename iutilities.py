@@ -155,6 +155,9 @@ def archive(file_path, file_name, copy = False, alternatePath = ""):
                 print e
     else:
         pass
+
+    if not op.exists(finalPath):        
+        os.mkdir(finalPath)
         
     #print op.join(file_path, file_name), finalPath
     if copy: shutil.copy2(fileToArchive, finalPath)
