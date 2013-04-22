@@ -16,10 +16,10 @@ import subprocess
 #import pymel.core as pc
 import datetime
 
-from os.path import curdir, join, abspath, splitunc, splitdrive, sep, normpath, pardir
+from os.path import curdir, join, abspath, splitunc, splitdrive, sep, pardir
 
 def _abspath_split(path):
-    abs = abspath(normpath(path))
+    abs = abspath(op.normpath(path))
     prefix, rest = splitunc(abs)
     is_unc = bool(prefix)
     if not is_unc:
@@ -164,6 +164,11 @@ def archive(file_path, file_name, copy = False, alternatePath = ""):
     else: shutil.move(fileToArchive, finalPath)
     
     return op.join(finalPath, file_name)
+
+def listdir(path, dirs = True):
+    
+    path = path if op.isdir(path) else op.dirname(path)
+    return filter(lambda sibling: not (op.isdir(op.join(path, sibling)) ^ dirs), os.listdir(path))
 
 def localPath(path, localDrives):
     try:
