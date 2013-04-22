@@ -391,6 +391,9 @@ def getOwner(path):
 def getFileMDate(path):
     return str(datetime.datetime.fromtimestamp(op.getmtime(path))).split('.')[0]
 
+def timestampToDateTime(timestamp):
+    return str(datetime.datetime.fromtimestamp(timestamp)).split('.')[0]
+
 def profile(sort='cumulative', lines=50, strip_dirs=False):
     """A decorator which profiles a callable.
     Example usage:
