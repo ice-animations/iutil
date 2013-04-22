@@ -99,9 +99,9 @@ def getPathComps(path):
 def randomNumber():
     return random.random()
 
-def archive(file_path, file_name, copy = False, alternatePath = ""):
+def archive(file_dir, file_name, copy = False, alternatePath = ""):
     '''
-    Move the file file_path, filename to file_path, .archive, filename, file_name_date_modified
+    Move the file file_dir, filename to file_dir, .archive, filename, file_name_date_modified
     '''
     # TODO: determine of to archive component who also have
     if alternatePath:
@@ -110,7 +110,7 @@ def archive(file_path, file_name, copy = False, alternatePath = ""):
         else:
             fpath = alternatePath
     else:
-        fpath = file_path
+        fpath = file_dir
         
     if not haveWritePermission(fpath):
         warnings.warn('Access denied...')
@@ -124,7 +124,7 @@ def archive(file_path, file_name, copy = False, alternatePath = ""):
         return
 
     try:
-        dir_names = os.listdir(file_path)
+        dir_names = os.listdir(file_dir)
     except WindowsError:
         warnings.warn('Incorrect path, use / instead of \\ in the path...')
         return
@@ -136,21 +136,33 @@ def archive(file_path, file_name, copy = False, alternatePath = ""):
 
     archive = op.join(fpath ,'.archive')
     if '.archive' not in os.listdir(fpath):
+        # make .archive directory in case it doesn't exists
         os.mkdir(archive)
+    
     _dir = os.listdir(archive)
-    fileArchive = op.join(archive , file_name)
+
+    # name of the directory which contains all the version of the file
+    fileArchive = op.join(archive , file_name) 
+
     if file_name not in _dir:
+        # if directory specific to the file doesn't exists, create one
         os.mkdir(fileArchive)
-    fileToArchive = op.join(file_path, file_name)
+
+    fileToArchive = op.join(file_dir, file_name)
+    
+    # date the file was modified.
     date = str(datetime.datetime.fromtimestamp(op.getmtime(fileToArchive))).replace(':', '-').replace(' ','_')
+    
     finalPath = op.join(fileArchive, date)
+
     if op.exists(finalPath):
         if os.listdir(finalPath):
             try:
                 if op.getsize(fileToArchive) == op.getsize(op.join(finalPath, filter(lambda theFile: op.isfile(op.join(finalPath, theFile)), os.listdir(finalPath))[0])):
                     return op.join(finalPath, file_name) # redundant code
                 else:
-                    finalPath = getTemp(prefix = date + "_", mkd = True, directory = fileArchive )
+                    finalPath = getTemp(prefix = date + "_", mkd = True, directory = fileArchive)
+
             except BaseException as e:
                 print e
     else:
@@ -159,7 +171,7 @@ def archive(file_path, file_name, copy = False, alternatePath = ""):
     if not op.exists(finalPath):        
         os.mkdir(finalPath)
         
-    #print op.join(file_path, file_name), finalPath
+    #print op.join(file_dir, file_name), finalPath
     if copy: shutil.copy2(fileToArchive, finalPath)
     else: shutil.move(fileToArchive, finalPath)
     
