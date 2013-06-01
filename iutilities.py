@@ -3,6 +3,8 @@
 #          Hussain Parsaiyan (hussain.parsaiyan@iceanimations.com)
 
 import sip, random, os, shutil, warnings, re, stat, subprocess
+import time
+import hashlib
 #import maya.cmds as cmds
 import win32api
 import win32con
@@ -386,7 +388,7 @@ def getOwner(path):
         owner_sid = sd.GetSecurityDescriptorOwner ()
         name, domain, type = win32security.LookupAccountSid (None, owner_sid)
     finally:
-        return " ".join(map(lambda name: name.capitalize(), name.split(".")))
+        return name.split(".")
 
 def getFileMDate(path):
     return str(datetime.datetime.fromtimestamp(op.getmtime(path))).split('.')[0]
@@ -457,6 +459,30 @@ def profile(sort='cumulative', lines=50, strip_dirs=False):
 def getDirs(path):
     if path and op.exists(path):
         return os.listdir(path)
+
+def timeMe(func):
+    def wrapper(*args, **kwargs):
+        t = time.time()
+        result = func(*args, **kwargs)
+        print time.time() - t
+        return result
+    return wrapper
+@timeMe
+def sha512OfFile(path):
+    
+    if not op.exists(path): raise Exception
+    with open(path, "rb") as testFile:
+        hash = hashlib.sha512()
+        
+        while True:
+            piece = testFile.read(1024**3)
+            if piece:
+                hash.update(piece)
+            else: 
+                hex_hash = hash.hexdigest()
+                break
+        
+    return hex_hash 
 
 if __name__ == "__main__":
     file_path = "d:/user_files/hussain.parsaiyan/desktop"
