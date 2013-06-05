@@ -85,6 +85,18 @@ def mayaFile(path):
         if path.endswith(extension): return True
     return False
 
+def getIndPathComps(path):
+    ''' returns all the path components in a list seperately
+    '''
+    comps = []
+    split = op.split(path)
+    while split[1]:
+        comps.insert(0, split[1])
+        split = op.split(split[0])
+    if split[0]:
+        comps.insert(0, op.normpath(split[0]))
+    return comps
+
 def getPathComps(path):
     '''
     returns the directory below path
