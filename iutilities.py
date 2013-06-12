@@ -2,9 +2,10 @@
 # Author : Qurban Ali (qurban.ali@iceanimations.com),
 #          Hussain Parsaiyan (hussain.parsaiyan@iceanimations.com)
 
-import sip, random, os, shutil, warnings, re, stat, subprocess
+import random, os, shutil, warnings, re, stat, subprocess
 import time
 import hashlib
+import functools
 #import maya.cmds as cmds
 import win32api
 import win32con
@@ -17,8 +18,35 @@ op = os.path
 import subprocess
 #import pymel.core as pc
 import datetime
-
+import collections
 from os.path import curdir, join, abspath, splitunc, splitdrive, sep, pardir
+
+class memoize(object):
+   '''Decorator. Caches a function's return value each time it is called.
+   If called later with the same arguments, the cached value is returned
+   (not reevaluated).
+   '''
+   def __init__(self, func):
+      self.func = func
+      self.cache = {}
+   def __call__(self, *args):
+      if not isinstance(args, collections.Hashable):
+         # uncacheable. a list, for instance.
+         # better to not cache than blow up.
+         return self.func(*args)
+      if args in self.cache:
+          return self.cache[args]
+      else:
+         value = self.func(*args)
+         self.cache[args] = value
+         return value
+   def __repr__(self):
+      '''Return the function's docstring.'''
+      return self.func.__doc__
+   def __get__(self, obj, objtype):
+      '''Support instance methods.'''
+      return functools.partial(self.__call__, obj)
+
 
 def _abspath_split(path):
     abs = abspath(op.normpath(path))
@@ -495,6 +523,7 @@ def sha512OfFile(path):
                 break
         
     return hex_hash 
+
 
 if __name__ == "__main__":
     file_path = "d:/user_files/hussain.parsaiyan/desktop"
