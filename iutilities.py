@@ -524,6 +524,12 @@ def sha512OfFile(path):
         
     return hex_hash 
 
+def clearList(lis):
+    try:
+        for i in range(len(lis)):
+            lis.pop()
+        return True
+    except: return False
 
 if __name__ == "__main__":
     file_path = "d:/user_files/hussain.parsaiyan/desktop"
