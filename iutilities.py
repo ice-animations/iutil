@@ -7,9 +7,9 @@ import time
 import hashlib
 import functools
 #import maya.cmds as cmds
-import win32api
-import win32con
-import win32security
+# import win32api
+# import win32con
+# import win32security
 import cProfile
 import tempfile
 #import pstats
@@ -424,9 +424,10 @@ def gotoLocation(path):
 def getOwner(path):
     name = ""
     try:
-        sd = win32security.GetFileSecurity (path, win32security.OWNER_SECURITY_INFORMATION)
-        owner_sid = sd.GetSecurityDescriptorOwner ()
-        name, domain, type = win32security.LookupAccountSid (None, owner_sid)
+        # sd = win32security.GetFileSecurity (path, win32security.OWNER_SECURITY_INFORMATION)
+        # owner_sid = sd.GetSecurityDescriptorOwner ()
+        # name, domain, type = win32security.LookupAccountSid (None, owner_sid)
+       pass
     finally:
         return name.split(".")
 
