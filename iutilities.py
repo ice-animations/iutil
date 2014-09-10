@@ -357,7 +357,7 @@ def getSequenceFiles(filepath):
     res = re.match(r'^(.*?)(\D)(-?\d*)$', filename)
     if not res:
         #Cannot be part of sequence of files
-        return None
+       return []
     # making match pattern for all the files in the sequence
     seqPattern = re.compile(('^' + ''.join(res.groups()[:-1]) +
                              '(-?)(\\d+)' + filext + '$').replace('.', '\\.'))
@@ -366,6 +366,21 @@ def getSequenceFiles(filepath):
     return [normpath(os.path.join(dirname,dbn))
             for dbn in os.listdir(dirname)
             if seqPattern.match(dbn)]
+
+def getTxFile(filepath):
+    '''
+    Get the sequence of files that are named similar but with extension '.tx'
+    '''
+    filename = normpath(filepath)
+    dirname  = op.dirname(filename)
+    basename = op.basename(filename)
+    filename, fileext = op.splitext(basename)
+    txPattern = re.compile(r'\.tx', re.IGNORECASE)
+    if not txPattern.match(fileext):
+        txFilename = op.join(dirname, filename + r'.tx')
+        if op.exists(txFilename):
+            return txFilename
+    return None
 
 def copyFilesTo(desPath, files = []):
     copiedTo = []
