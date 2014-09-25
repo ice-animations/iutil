@@ -367,6 +367,52 @@ def getSequenceFiles(filepath):
             for dbn in os.listdir(dirname)
             if seqPattern.match(dbn)]
 
+def getUVTilePattern(filename, ext, filename_format='mari'):
+    flags = re.I
+    if os.name == 'posix':
+        flags = 0
+    if filename_format=='mari':
+        return re.compile(('^' + filename + '(1\d{3})' + ext +
+            '$').replace('.', '\\.'), flags)
+    elif filename_format == 'mudbox':
+        return re.compile(('^' + filename + '([uU][1-9]\d*_[vV][1-9]\d*)' + ext +
+            '$').replace('.', '\\.'), flags)
+    elif filename_format == 'zbrush':
+        return re.compile(('^' + filename + '([uU]\d+_[vV]\d+)' + ext +
+            '$').replace('.', '\\.'), flags)
+    return re.compile(('^' + filename + ext + '$').replace('.' '\\.'), flags)
+
+udim_patterns = {
+        'mari':
+        re.compile('^(?P<filename>[^<]*)(?:\<UDIM\>)?(?P<ext>\\..*?)$',
+            re.I),
+
+        'zbrush':
+        re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?(?P<ext>\\..*?)$',
+            re.I),
+
+        'mudbox':
+        re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?(?P<ext>\\..*?)$',
+            re.I),
+}
+udim_default_pattern = re.compile('^(?P<filename>[^<]*)(?P<ext>\\..*?)$')
+
+def getUVTiles(filepath, filename_format='mari'):
+    uvTiles = []
+    filepath  = op.normpath(filepath)
+    dirname  = op.dirname(filepath)
+    basename = op.basename(filepath)
+    udim_pattern = udim_patterns.get(filename_format, udim_default_pattern)
+    match = udim_pattern.match(basename)
+    if match:
+        filename = match.group('filename')
+        ext = match.group('ext')
+        tile_pattern = getUVTilePattern(filename, ext, filename_format)
+        uvTiles = [normpath(os.path.join(dirname,dbn))
+                for dbn in os.listdir(dirname)
+                if tile_pattern.match(dbn)]
+    return uvTiles
+
 def getTxFile(filepath):
     '''
     Get the sequence of files that are named similar but with extension '.tx'
