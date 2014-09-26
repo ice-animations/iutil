@@ -397,6 +397,14 @@ udim_patterns = {
 }
 udim_default_pattern = re.compile('^(?P<filename>[^<]*)(?P<ext>\\..*?)$')
 
+def detectUdim(filepath):
+    filepath  = op.normpath(filepath)
+    basename = op.basename(filepath)
+    for name, pat in udim_patterns.iteritems():
+        match = pat.match(basename)
+        if match:
+            return name
+
 def getUVTiles(filepath, filename_format='mari'):
     uvTiles = []
     filepath  = op.normpath(filepath)
@@ -408,9 +416,9 @@ def getUVTiles(filepath, filename_format='mari'):
         filename = match.group('filename')
         ext = match.group('ext')
         tile_pattern = getUVTilePattern(filename, ext, filename_format)
-        uvTiles = [normpath(os.path.join(dirname,dbn))
-                for dbn in os.listdir(dirname)
-                if tile_pattern.match(dbn)]
+        uvTiles = filter( op.exists,
+                [normpath(os.path.join(dirname,dbn))
+                    for dbn in os.listdir(dirname) if tile_pattern.match(dbn)])
     return uvTiles
 
 def getTxFile(filepath):
