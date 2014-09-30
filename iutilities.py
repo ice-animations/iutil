@@ -429,8 +429,9 @@ def getUVTiles(filepath, filename_format='mari'):
         filename = match.group('filename')
         ext = match.group('ext')
         tile_pattern = getUVTilePattern(filename, ext, filename_format)
-        uvTiles = filter( op.exists,
-                [normpath(os.path.join(dirname,dbn))
+        if op.exists(dirname):
+            uvTiles = filter( op.exists,
+                    [normpath(os.path.join(dirname,dbn))
                     for dbn in os.listdir(dirname) if tile_pattern.match(dbn)])
     return uvTiles
 
