@@ -10,7 +10,6 @@ import cProfile
 import tempfile
 import itertools
 op = os.path
-import subprocess
 import datetime
 import collections
 from os.path import curdir, join, abspath, splitunc, splitdrive, sep, pardir
@@ -20,7 +19,7 @@ class memoize(object):
    If called later with the same arguments, the cached value is returned
    (not reevaluated).
    '''
-   
+
    def __init__(self, func):
       self.func = func
       self.cache = {}
@@ -150,7 +149,7 @@ def archive(file_dir, file_name, copy = False, alternatePath = ""):
             fpath = alternatePath
     else:
         fpath = file_dir
-        
+
     if not haveWritePermission(fpath):
         warnings.warn('Access denied...')
         return
@@ -177,21 +176,21 @@ def archive(file_dir, file_name, copy = False, alternatePath = ""):
     if '.archive' not in os.listdir(fpath):
         # make .archive directory in case it doesn't exists
         os.mkdir(archive)
-    
+
     _dir = os.listdir(archive)
 
     # name of the directory which contains all the version of the file
-    fileArchive = op.join(archive , file_name) 
+    fileArchive = op.join(archive , file_name)
 
     if file_name not in _dir:
         # if directory specific to the file doesn't exists, create one
         os.mkdir(fileArchive)
 
     fileToArchive = op.join(file_dir, file_name)
-    
+
     # date the file was modified.
     date = str(datetime.datetime.fromtimestamp(op.getmtime(fileToArchive))).replace(':', '-').replace(' ','_')
-    
+
     finalPath = op.join(fileArchive, date)
 
     if op.exists(finalPath):
@@ -207,17 +206,17 @@ def archive(file_dir, file_name, copy = False, alternatePath = ""):
     else:
         pass
 
-    if not op.exists(finalPath):        
+    if not op.exists(finalPath):
         os.mkdir(finalPath)
-        
+
     #print op.join(file_dir, file_name), finalPath
     if copy: shutil.copy2(fileToArchive, finalPath)
     else: shutil.move(fileToArchive, finalPath)
-    
+
     return op.join(finalPath, file_name)
 
 def listdir(path, dirs = True):
-    
+
     path = path if op.isdir(path) else op.dirname(path)
     return filter(lambda sibling: not (op.isdir(op.join(path, sibling)) ^ dirs), os.listdir(path))
 
@@ -238,7 +237,7 @@ def lowestConsecutiveUniqueFN(dirpath, basename, hasExt = True, key = op.exists)
         basename, ext = tuple(op.splitext(basename))
     else:
         pass
-    
+
     # make unique name
     if not key(op.join(dirpath, basename) + ext):
         basename += ext
@@ -253,7 +252,7 @@ def lowestConsecutiveUniqueFN(dirpath, basename, hasExt = True, key = op.exists)
                 num += 1
                 continue
             else:
-                
+
                 basename = basename + "_" + str(num) + ext
                 break
 
@@ -261,7 +260,7 @@ def lowestConsecutiveUniqueFN(dirpath, basename, hasExt = True, key = op.exists)
 
 lCUFN = lowestConsecutiveUniqueFN
 
-def silentShellCall(command): 
+def silentShellCall(command):
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     return subprocess.call(command, startupinfo=startupinfo)
@@ -395,12 +394,26 @@ udim_patterns = {
         re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?(?P<ext>\\..*?)$',
             re.I),
 }
+
+udim_detect_patterns = {
+        'mari':
+        re.compile('^(?P<filename>[^<]*)(?:\<UDIM\>)(?P<ext>\\..*?)$',
+            re.I),
+
+        'zbrush':
+        re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)(?P<ext>\\..*?)$',
+            re.I),
+
+        'mudbox':
+        re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)(?P<ext>\\..*?)$',
+            re.I),
+}
 udim_default_pattern = re.compile('^(?P<filename>[^<]*)(?P<ext>\\..*?)$')
 
 def detectUdim(filepath):
     filepath  = op.normpath(filepath)
     basename = op.basename(filepath)
-    for name, pat in udim_patterns.iteritems():
+    for name, pat in udim_detect_patterns.iteritems():
         match = pat.match(basename)
         if match:
             return name
@@ -473,7 +486,7 @@ def isDirInPath(dir, path):
     if str(dir.lower()) in dirs:
         return True
     else: return False
-    
+
 def gotoLocation(path):
     path = normpath(path)
     if os.name == 'nt':
@@ -548,7 +561,7 @@ def profile(sort='cumulative', lines=50, strip_dirs=False):
     return outer
 
 def getDirs(path):
-    
+
    if path and op.exists(path):
         return os.listdir(path)
 
@@ -569,10 +582,10 @@ def sha512OfFile(path):
             piece = testFile.read(1024**3)
             if piece:
                 hash.update(piece)
-            else: 
+            else:
                 hex_hash = hash.hexdigest()
                 break
-    return hex_hash 
+    return hex_hash
 
 def clearList(lis):
     try:
