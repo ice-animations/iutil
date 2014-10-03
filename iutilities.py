@@ -231,9 +231,9 @@ def localPath(path, localDrives):
 def normpath(path):
     return op.abspath(op.normpath(str(path)))
 
-def lowestConsecutiveUniqueFN(dirpath, basename, hasExt = True, key = op.exists):
+def lowestConsecutiveUniqueFN(dirpath, basename, hasext = True, key = op.exists):
     ext = ""
-    if hasExt:
+    if hasext:
         basename, ext = tuple(op.splitext(basename))
     else:
         pass
@@ -259,6 +259,64 @@ def lowestConsecutiveUniqueFN(dirpath, basename, hasExt = True, key = op.exists)
     return basename
 
 lCUFN = lowestConsecutiveUniqueFN
+
+def ftn_similarity(ftn1, ftn2, ftn_to_texs):
+    texs1 = set(ftn_to_texs[ftn1])
+    texs2 = set(ftn_to_texs[ftn2])
+    return texs1.intersection(texs2)
+
+def find_related_ftns(myftn, ftn_to_texs):
+    '''
+    :type ftn: str
+    :type ftn_to_texs: dict
+    '''
+    related_ftns = [myftn]
+
+    similars = []
+    for ftn in ftn_to_texs:
+        if ftn!=myftn and ftn_similarity(myftn, ftn, ftn_to_texs):
+            similars.append(ftn)
+
+    related_ftns.extend(similars)
+    mytexs = set(ftn_to_texs.pop(myftn))
+
+    for sftn in similars:
+        texs, ftns=find_related_ftns(sftn, ftn_to_texs)
+        mytexs.update(texs)
+        related_ftns.extend(ftns)
+
+    return related_ftns, mytexs
+
+fn_pattern = r'(?P<bn>.*?)(?P<sep>[._])?(?P<tok>-?\d+|u\d_v\d|\<udim\>|u\<U\>_v\<V\>)?(?P<ext>\..*?)$'
+fn_pattern = re.compile( fn_pattern, re.I)
+
+def numerateBN(bn, num=0, pat=fn_pattern):
+    match = pat.match(bn)
+    return (match.group('bn') + "_%d"%num + match.group('sep') +
+            match.group('tok') + match.group('ext'))
+
+def anyNameClash(dirpath, basenames, key=op.exists):
+    return any((key(op.join(dirpath, bn)) for bn in basenames))
+
+def lowestConsecutiveUniqueFTN(dirpath, ftns, texs, key = op.exists):
+    texs = list(texs)
+    mapping = {}
+    ftn_bns = [op.basename(ftn) for ftn in ftns]
+    tex_bns = [op.basename(tex) for tex in texs]
+    ftn_new_bns = ftn_bns
+    tex_new_bns = tex_bns
+
+    num = 0
+    while anyNameClash(dirpath, tex_new_bns):
+        num += 1
+        tex_new_bns = [numerateBN(bn, num) for bn in tex_bns]
+        ftn_new_bns = [numerateBN(bn, num) for bn in ftn_bns]
+
+    mapping.update({texs[i]: op.join(dirpath, tex_new_bns[i]) for i in range(len(tex_bns))})
+    mapping.update({ftns[i]: op.join(dirpath, ftn_new_bns[i]) for i in range(len(ftn_bns))})
+    return mapping
+
+lCUFTN = lowestConsecutiveUniqueFTN
 
 def silentShellCall(command):
     startupinfo = subprocess.STARTUPINFO()
