@@ -422,7 +422,7 @@ def getSequenceFiles(filepath):
     # sequence pattern
     return [normpath(os.path.join(dirname,dbn))
             for dbn in os.listdir(dirname)
-            if seqPattern.match(dbn)]
+            if seqPattern.match(dbn)] if os.path.exists(dirname) else []
 
 def getUVTilePattern(filename, ext, filename_format='mari'):
     flags = re.I
@@ -437,7 +437,7 @@ def getUVTilePattern(filename, ext, filename_format='mari'):
     elif filename_format == 'zbrush':
         return re.compile(('^' + filename + '([uU]\d+_[vV]\d+)' + ext +
             '$').replace('.', '\\.'), flags)
-    return re.compile(('^' + filename + ext + '$').replace('.' '\\.'), flags)
+    return re.compile(('^' + filename + ext + '$').replace('.', '\\.'), flags)
 
 udim_patterns = {
         'mari':
@@ -493,7 +493,7 @@ def getUVTiles(filepath, filename_format='mari'):
                     for dbn in os.listdir(dirname) if tile_pattern.match(dbn)])
     return uvTiles
 
-def getTxFile(filepath):
+def getTxFile(filepath, ext='tx'):
     '''
     Get the sequence of files that are named similar but with extension '.tx'
     '''
@@ -501,12 +501,15 @@ def getTxFile(filepath):
     dirname  = op.dirname(filename)
     basename = op.basename(filename)
     filename, fileext = op.splitext(basename)
-    txPattern = re.compile(r'\.tx', re.IGNORECASE)
+    txPattern = re.compile(r'\.%s'%ext, re.IGNORECASE)
     if not txPattern.match(fileext):
-        txFilename = op.join(dirname, filename + r'.tx')
+        txFilename = op.join(dirname, filename + r'.%s'%ext)
+        print txFilename
         if op.exists(txFilename):
             return txFilename
     return None
+
+getFileByExtension = getTxFile
 
 def copyFilesTo(desPath, files = []):
     copiedTo = []
