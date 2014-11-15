@@ -1,6 +1,7 @@
 # Date: Wed 28/11/2012
 # Author : Qurban Ali (qurban.ali@iceanimations.com),
 #          Hussain Parsaiyan (hussain.parsaiyan@iceanimations.com)
+#          Talha Ahmed (talha.ahmed@iceanimations.com)
 
 import random, os, shutil, warnings, re, stat, subprocess
 import time
@@ -504,7 +505,6 @@ def getTxFile(filepath, ext='tx'):
     txPattern = re.compile(r'\.%s'%ext, re.IGNORECASE)
     if not txPattern.match(fileext):
         txFilename = op.join(dirname, filename + r'.%s'%ext)
-        print txFilename
         if op.exists(txFilename):
             return txFilename
     return None
