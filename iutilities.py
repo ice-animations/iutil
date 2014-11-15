@@ -1,6 +1,7 @@
 # Date: Wed 28/11/2012
 # Author : Qurban Ali (qurban.ali@iceanimations.com),
 #          Hussain Parsaiyan (hussain.parsaiyan@iceanimations.com)
+#          Talha Ahmed (talha.ahmed@iceanimations.com)
 
 import random, os, shutil, warnings, re, stat, subprocess
 import time
@@ -10,7 +11,6 @@ import cProfile
 import tempfile
 import itertools
 op = os.path
-import subprocess
 import datetime
 import collections
 from os.path import curdir, join, abspath, splitunc, splitdrive, sep, pardir
@@ -20,7 +20,7 @@ class memoize(object):
    If called later with the same arguments, the cached value is returned
    (not reevaluated).
    '''
-   
+
    def __init__(self, func):
       self.func = func
       self.cache = {}
@@ -150,7 +150,7 @@ def archive(file_dir, file_name, copy = False, alternatePath = ""):
             fpath = alternatePath
     else:
         fpath = file_dir
-        
+
     if not haveWritePermission(fpath):
         warnings.warn('Access denied...')
         return
@@ -169,7 +169,6 @@ def archive(file_dir, file_name, copy = False, alternatePath = ""):
         return
 
     if file_name not in dir_names:
-        print dir_names, file_name
         warnings.warn('File doesn\'t exist...')
         return
 
@@ -177,21 +176,21 @@ def archive(file_dir, file_name, copy = False, alternatePath = ""):
     if '.archive' not in os.listdir(fpath):
         # make .archive directory in case it doesn't exists
         os.mkdir(archive)
-    
+
     _dir = os.listdir(archive)
 
     # name of the directory which contains all the version of the file
-    fileArchive = op.join(archive , file_name) 
+    fileArchive = op.join(archive , file_name)
 
     if file_name not in _dir:
         # if directory specific to the file doesn't exists, create one
         os.mkdir(fileArchive)
 
     fileToArchive = op.join(file_dir, file_name)
-    
+
     # date the file was modified.
     date = str(datetime.datetime.fromtimestamp(op.getmtime(fileToArchive))).replace(':', '-').replace(' ','_')
-    
+
     finalPath = op.join(fileArchive, date)
 
     if op.exists(finalPath):
@@ -207,17 +206,16 @@ def archive(file_dir, file_name, copy = False, alternatePath = ""):
     else:
         pass
 
-    if not op.exists(finalPath):        
+    if not op.exists(finalPath):
         os.mkdir(finalPath)
-        
-    #print op.join(file_dir, file_name), finalPath
+
     if copy: shutil.copy2(fileToArchive, finalPath)
     else: shutil.move(fileToArchive, finalPath)
-    
+
     return op.join(finalPath, file_name)
 
 def listdir(path, dirs = True):
-    
+
     path = path if op.isdir(path) else op.dirname(path)
     return filter(lambda sibling: not (op.isdir(op.join(path, sibling)) ^ dirs), os.listdir(path))
 
@@ -232,13 +230,13 @@ def localPath(path, localDrives):
 def normpath(path):
     return op.abspath(op.normpath(str(path)))
 
-def lowestConsecutiveUniqueFN(dirpath, basename, hasExt = True, key = op.exists):
+def lowestConsecutiveUniqueFN(dirpath, basename, hasext = True, key = op.exists):
     ext = ""
-    if hasExt:
+    if hasext:
         basename, ext = tuple(op.splitext(basename))
     else:
         pass
-    
+
     # make unique name
     if not key(op.join(dirpath, basename) + ext):
         basename += ext
@@ -253,7 +251,7 @@ def lowestConsecutiveUniqueFN(dirpath, basename, hasExt = True, key = op.exists)
                 num += 1
                 continue
             else:
-                
+
                 basename = basename + "_" + str(num) + ext
                 break
 
@@ -261,7 +259,65 @@ def lowestConsecutiveUniqueFN(dirpath, basename, hasExt = True, key = op.exists)
 
 lCUFN = lowestConsecutiveUniqueFN
 
-def silentShellCall(command): 
+def ftn_similarity(ftn1, ftn2, ftn_to_texs):
+    texs1 = set(ftn_to_texs[ftn1])
+    texs2 = set(ftn_to_texs[ftn2])
+    return texs1.intersection(texs2)
+
+def find_related_ftns(myftn, ftn_to_texs):
+    '''
+    :type ftn: str
+    :type ftn_to_texs: dict
+    '''
+    related_ftns = [myftn]
+
+    similars = []
+    for ftn in ftn_to_texs:
+        if ftn!=myftn and ftn_similarity(myftn, ftn, ftn_to_texs):
+            similars.append(ftn)
+
+    related_ftns.extend(similars)
+    mytexs = set(ftn_to_texs.pop(myftn))
+
+    for sftn in similars:
+        texs, ftns=find_related_ftns(sftn, ftn_to_texs)
+        mytexs.update(texs)
+        related_ftns.extend(ftns)
+
+    return related_ftns, mytexs
+
+fn_pattern = r'(?P<bn>.*?)(?P<sep>[._])?(?P<tok>-?\d+|u\d_v\d|\<udim\>|u\<U\>_v\<V\>)?(?P<ext>\..*?)$'
+fn_pattern = re.compile( fn_pattern, re.I)
+
+def numerateBN(bn, num=0, pat=fn_pattern):
+    match = pat.match(bn)
+    return (match.group('bn') + "_%d"%num + match.group('sep') +
+            match.group('tok') + match.group('ext'))
+
+def anyNameClash(dirpath, basenames, key=op.exists):
+    return any((key(op.join(dirpath, bn)) for bn in basenames))
+
+def lowestConsecutiveUniqueFTN(dirpath, ftns, texs, key = op.exists):
+    texs = list(texs)
+    mapping = {}
+    ftn_bns = [op.basename(ftn) for ftn in ftns]
+    tex_bns = [op.basename(tex) for tex in texs]
+    ftn_new_bns = ftn_bns
+    tex_new_bns = tex_bns
+
+    num = 0
+    while anyNameClash(dirpath, tex_new_bns):
+        num += 1
+        tex_new_bns = [numerateBN(bn, num) for bn in tex_bns]
+        ftn_new_bns = [numerateBN(bn, num) for bn in ftn_bns]
+
+    mapping.update({texs[i]: op.join(dirpath, tex_new_bns[i]) for i in range(len(tex_bns))})
+    mapping.update({ftns[i]: op.join(dirpath, ftn_new_bns[i]) for i in range(len(ftn_bns))})
+    return mapping
+
+lCUFTN = lowestConsecutiveUniqueFTN
+
+def silentShellCall(command):
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     return subprocess.call(command, startupinfo=startupinfo)
@@ -288,7 +344,7 @@ def haveWritePermission(path, sub = False):
         os.remove(getTemp(directory = path))
         return True
     except OSError, WindowsError:
-        if kwarg.get("sub"):
+        if sub:
             count = 1
             # check if the user has write permissions in subsequent subdirs
             for fl, fds, fls in os.walk(path):
@@ -298,7 +354,7 @@ def haveWritePermission(path, sub = False):
                     try:
                         os.remove(getTemp(directory = op.join(fl, fd)))
                         return True
-                    except OSError, WindowsError:
+                    except (OSError, WindowsError):
                         continue
             return False
         else:
@@ -365,9 +421,78 @@ def getSequenceFiles(filepath):
     # sequence pattern
     return [normpath(os.path.join(dirname,dbn))
             for dbn in os.listdir(dirname)
-            if seqPattern.match(dbn)]
+            if seqPattern.match(dbn)] if os.path.exists(dirname) else []
 
-def getTxFile(filepath):
+def getUVTilePattern(filename, ext, filename_format='mari'):
+    flags = re.I
+    if os.name == 'posix':
+        flags = 0
+    if filename_format=='mari':
+        return re.compile(('^' + filename + '(1\d{3})' + ext +
+            '$').replace('.', '\\.'), flags)
+    elif filename_format == 'mudbox':
+        return re.compile(('^' + filename + '([uU][1-9]\d*_[vV][1-9]\d*)' + ext +
+            '$').replace('.', '\\.'), flags)
+    elif filename_format == 'zbrush':
+        return re.compile(('^' + filename + '([uU]\d+_[vV]\d+)' + ext +
+            '$').replace('.', '\\.'), flags)
+    return re.compile(('^' + filename + ext + '$').replace('.', '\\.'), flags)
+
+udim_patterns = {
+        'mari':
+        re.compile('^(?P<filename>[^<]*)(?:\<UDIM\>)?(?P<ext>\\..*?)$',
+            re.I),
+
+        'zbrush':
+        re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?(?P<ext>\\..*?)$',
+            re.I),
+
+        'mudbox':
+        re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?(?P<ext>\\..*?)$',
+            re.I),
+}
+
+udim_detect_patterns = {
+        'mari':
+        re.compile('^(?P<filename>[^<]*)(?:\<UDIM\>)(?P<ext>\\..*?)$',
+            re.I),
+
+        'zbrush':
+        re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)(?P<ext>\\..*?)$',
+            re.I),
+
+        'mudbox':
+        re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)(?P<ext>\\..*?)$',
+            re.I),
+}
+udim_default_pattern = re.compile('^(?P<filename>[^<]*)(?P<ext>\\..*?)$')
+
+def detectUdim(filepath):
+    filepath  = op.normpath(filepath)
+    basename = op.basename(filepath)
+    for name, pat in udim_detect_patterns.iteritems():
+        match = pat.match(basename)
+        if match:
+            return name
+
+def getUVTiles(filepath, filename_format='mari'):
+    uvTiles = []
+    filepath  = op.normpath(filepath)
+    dirname  = op.dirname(filepath)
+    basename = op.basename(filepath)
+    udim_pattern = udim_patterns.get(filename_format, udim_default_pattern)
+    match = udim_pattern.match(basename)
+    if match:
+        filename = match.group('filename')
+        ext = match.group('ext')
+        tile_pattern = getUVTilePattern(filename, ext, filename_format)
+        if op.exists(dirname):
+            uvTiles = filter( op.exists,
+                    [normpath(os.path.join(dirname,dbn))
+                    for dbn in os.listdir(dirname) if tile_pattern.match(dbn)])
+    return uvTiles
+
+def getTxFile(filepath, ext='tx'):
     '''
     Get the sequence of files that are named similar but with extension '.tx'
     '''
@@ -375,12 +500,14 @@ def getTxFile(filepath):
     dirname  = op.dirname(filename)
     basename = op.basename(filename)
     filename, fileext = op.splitext(basename)
-    txPattern = re.compile(r'\.tx', re.IGNORECASE)
+    txPattern = re.compile(r'\.%s'%ext, re.IGNORECASE)
     if not txPattern.match(fileext):
-        txFilename = op.join(dirname, filename + r'.tx')
+        txFilename = op.join(dirname, filename + r'.%s'%ext)
         if op.exists(txFilename):
             return txFilename
     return None
+
+getFileByExtension = getTxFile
 
 def copyFilesTo(desPath, files = []):
     copiedTo = []
@@ -419,7 +546,7 @@ def isDirInPath(dir, path):
     if str(dir.lower()) in dirs:
         return True
     else: return False
-    
+
 def gotoLocation(path):
     path = normpath(path)
     if os.name == 'nt':
@@ -494,7 +621,7 @@ def profile(sort='cumulative', lines=50, strip_dirs=False):
     return outer
 
 def getDirs(path):
-    
+
    if path and op.exists(path):
         return os.listdir(path)
 
@@ -515,10 +642,10 @@ def sha512OfFile(path):
             piece = testFile.read(1024**3)
             if piece:
                 hash.update(piece)
-            else: 
+            else:
                 hex_hash = hash.hexdigest()
                 break
-    return hex_hash 
+    return hex_hash
 
 def clearList(lis):
     try:
