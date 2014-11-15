@@ -169,7 +169,6 @@ def archive(file_dir, file_name, copy = False, alternatePath = ""):
         return
 
     if file_name not in dir_names:
-        print dir_names, file_name
         warnings.warn('File doesn\'t exist...')
         return
 
@@ -210,7 +209,6 @@ def archive(file_dir, file_name, copy = False, alternatePath = ""):
     if not op.exists(finalPath):
         os.mkdir(finalPath)
 
-    #print op.join(file_dir, file_name), finalPath
     if copy: shutil.copy2(fileToArchive, finalPath)
     else: shutil.move(fileToArchive, finalPath)
 
@@ -346,7 +344,7 @@ def haveWritePermission(path, sub = False):
         os.remove(getTemp(directory = path))
         return True
     except OSError, WindowsError:
-        if kwarg.get("sub"):
+        if sub:
             count = 1
             # check if the user has write permissions in subsequent subdirs
             for fl, fds, fls in os.walk(path):
@@ -356,7 +354,7 @@ def haveWritePermission(path, sub = False):
                     try:
                         os.remove(getTemp(directory = op.join(fl, fd)))
                         return True
-                    except OSError, WindowsError:
+                    except (OSError, WindowsError):
                         continue
             return False
         else:
