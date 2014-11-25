@@ -65,6 +65,19 @@ def translateMappedtoUNC(path, maps=None):
         path = path.replace(drive, mapping.target, 1)
     return path
 
+def translateUNCtoMapped(path, maps=None):
+    '''
+    :type path: str or unicode
+    '''
+    path = os.path.normpath(path)
+    if not maps:
+        maps = getNetworkMaps()
+    for mapping in maps.values():
+        if path.startswith(mapping.target):
+            path = os.path.join(mapping.drive,
+                    os.path.relpath(path, mapping.target))
+            return path
+    return path
 
 def getDrive(path=None):
     if not path: path=os.curdir()

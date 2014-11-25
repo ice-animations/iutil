@@ -62,7 +62,7 @@ def translateSymlink(path, maps=None):
     return path
 
 
-def translatePath(path, maps=None, linkdir=None):
+def translatePath(path, maps=None, linkdir=None, reverse=False):
     '''
     :type path: str
     :type maps: None or list of symlinkMapping
@@ -77,8 +77,12 @@ def translatePath(path, maps=None, linkdir=None):
 
     for m in maps:
         linkpath = os.path.join(m.location, m.name)
-        if path.startswith(linkpath):
-            return path.replace(linkpath, m.target, 1)
+
+        tofind, toreplace = linkpath, m.target
+        if reverse:
+            tofind, toreplace = toreplace, tofind
+        if path.startswith(tofind):
+            return path.replace(tofind, toreplace, 1)
     return path
 
 
