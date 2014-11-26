@@ -5,11 +5,13 @@ from collections import namedtuple
 import os
 import string
 from ctypes import windll
+from ctypes import cdll, create_unicode_buffer
+from ctypes.wintypes import POINTER, LPCWSTR, LPWSTR, DWORD
 
-netusePattern = re.compile(r'(?P<status>OK|UnAvailable)(?:\s+)(?P<drive>[a-zA-Z]:)(?:\s+)(?P<target>.+?)(?:\s+)(?:Microsoft Windows Network|)(?:\s+)')
+netusePattern = re.compile(r'(?P<status>OK|UnAvailable|Disconnected)(?:\s+)(?P<drive>[a-zA-Z]:)(?:\s+)(?P<target>.+?)(?:\s+)(?:Microsoft Windows Network|)(?:\s+)')
 drivemapping = namedtuple('drivemapping', 'status drive target')
 
-def getNetworkMaps():
+def getNetworkMaps2():
     maps = {}
     pro = subprocess.Popen('net use', shell=1, stdout=subprocess.PIPE)
     out = pro.stdout.readlines()
@@ -19,6 +21,26 @@ def getNetworkMaps():
             dm = drivemapping(*match.groups())
             maps[dm.drive]=dm
 
+    return maps
+
+
+get_connection = cdll.mpr.WNetGetConnectionW
+get_connection.argtypes = [
+        LPCWSTR, #local_name
+        LPWSTR, #remote_name
+        POINTER(DWORD) #buf_len
+        ]
+get_connection.restype = DWORD
+
+def getNetworkMaps():
+    maps = {}
+    for drive in getDrives():
+        length = 256
+        remote = create_unicode_buffer(u"\000" * length)
+        res = get_connection(drive, remote, DWORD(length))
+        if not res:
+            dm = drivemapping('Unknown', drive, remote.value)
+            maps[dm.drive] = dm
     return maps
 
 
