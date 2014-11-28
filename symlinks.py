@@ -4,6 +4,11 @@ import os
 from collections import namedtuple
 import subprocess
 
+
+from .ntfslink import symlinks as syml
+from .ntfslink import junctions as junc
+
+
 symlinkdPattern = re.compile(r'^(?:.*)(?P<stype><SYMLINKD?>|<JUNCTION>)(?:\s+)(?P<name>.*)(?:\s+\[)'
         r'(?P<target>.*)(?:\]\s*)$')
 
