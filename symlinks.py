@@ -4,6 +4,11 @@ import os
 from collections import namedtuple
 import subprocess
 
+
+from .ntfslink import symlinks as syml
+from .ntfslink import junctions as junc
+
+
 symlinkdPattern = re.compile(r'^(?:.*)(?P<stype><SYMLINKD?>|<JUNCTION>)(?:\s+)(?P<name>.*)(?:\s+\[)'
         r'(?P<target>.*)(?:\]\s*)$')
 
@@ -18,8 +23,8 @@ def normpath(path):
     return path
 
 
-def getSymlinks(dirpath):
-    '''
+def getSymlinks2(dirpath):
+    ''' get symlink mapping by popen method
     :type dirpath: str
     '''
     maps = []
@@ -45,6 +50,31 @@ def getSymlinks(dirpath):
         maps.append(symlinkMapping(dirpath, name, target, stype))
     return maps
 
+def getSymlinks(dirpath):
+    ''' get symlink mappings by ctypes method
+    :type dirpath: str
+    '''
+    maps = []
+    dirpath = normpath(os.path.realpath(dirpath))
+
+    if not os.path.exists(dirpath):
+        raise ValueError, "Directory %s does not exists" % dirpath
+    if not os.path.isdir(dirpath):
+        raise ValueError, "%s is not a directory" % dirpath
+
+    for name in os.listdir(dirpath):
+        path = os.path.join(dirpath, name)
+        if syml.check(path):
+            maps.append(
+                    symlinkMapping(dirpath, name, normpath(syml.read(path)),
+                        '<SYMLINKD>'))
+        elif junc.check(path):
+            maps.append(
+                    symlinkMapping(dirpath, name, normpath(junc.read(path)),
+                        '<JUNCTION>'))
+
+    return maps
+
 
 def translateSymlink(path, maps=None):
     '''
@@ -62,7 +92,7 @@ def translateSymlink(path, maps=None):
     return path
 
 
-def translatePath(path, maps=None, linkdir=None):
+def translatePath(path, maps=None, linkdir=None, reverse=False):
     '''
     :type path: str
     :type maps: None or list of symlinkMapping
@@ -77,8 +107,12 @@ def translatePath(path, maps=None, linkdir=None):
 
     for m in maps:
         linkpath = os.path.join(m.location, m.name)
-        if path.startswith(linkpath):
-            return path.replace(linkpath, m.target, 1)
+
+        tofind, toreplace = linkpath, m.target
+        if reverse:
+            tofind, toreplace = toreplace, tofind
+        if path.startswith(tofind):
+            return path.replace(tofind, toreplace, 1)
     return path
 
 
