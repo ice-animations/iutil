@@ -18,8 +18,8 @@ def normpath(path):
     return path
 
 
-def getSymlinks(dirpath):
-    '''
+def getSymlinks2(dirpath):
+    ''' get symlink mapping by popen method
     :type dirpath: str
     '''
     maps = []
@@ -43,6 +43,31 @@ def getSymlinks(dirpath):
         target = normpath(match.group('target'))
         stype = match.group('stype')
         maps.append(symlinkMapping(dirpath, name, target, stype))
+    return maps
+
+def getSymlinks(dirpath):
+    ''' get symlink mappings by ctypes method
+    :type dirpath: str
+    '''
+    maps = []
+    dirpath = normpath(os.path.realpath(dirpath))
+
+    if not os.path.exists(dirpath):
+        raise ValueError, "Directory %s does not exists" % dirpath
+    if not os.path.isdir(dirpath):
+        raise ValueError, "%s is not a directory" % dirpath
+
+    for name in os.listdir(dirpath):
+        path = os.path.join(dirpath, name)
+        if syml.check(path):
+            maps.append(
+                    symlinkMapping(dirpath, name, normpath(syml.read(path)),
+                        '<SYMLINKD>'))
+        elif junc.check(path):
+            maps.append(
+                    symlinkMapping(dirpath, name, normpath(junc.read(path)),
+                        '<JUNCTION>'))
+
     return maps
 
 
