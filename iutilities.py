@@ -291,8 +291,12 @@ fn_pattern = re.compile( fn_pattern, re.I)
 
 def numerateBN(bn, num=0, pat=fn_pattern):
     match = pat.match(bn)
-    return (match.group('bn') + "_%d"%num + match.group('sep') +
-            match.group('tok') + match.group('ext'))
+    if match:
+        groupdict = {k:v if v is not None else '' for k, v in match.groupdict().items()}
+        return (groupdict['bn'] + "_%d"%num + groupdict[ 'sep' ] +
+                groupdict[ 'tok' ] + groupdict[ 'ext' ])
+    else:
+        return bn + "_%d"%num
 
 def anyNameClash(dirpath, basenames, key=op.exists):
     return any((key(op.join(dirpath, bn)) for bn in basenames))
