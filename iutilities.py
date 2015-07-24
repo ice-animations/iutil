@@ -42,6 +42,8 @@ class memoize(object):
       '''Support instance methods.'''
       return functools.partial(self.__call__, obj)
 
+def paths_equal(path1, path2):
+    return op.normpath(op.normcase(path1)) == op.normpath(op.normcase(path2))
 
 def _abspath_split(path):
     abs = abspath(op.normpath(path))
