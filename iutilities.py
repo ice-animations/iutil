@@ -183,6 +183,9 @@ def getPathComps(path):
         else: break
     return pathComps
 
+def randomString(length=5, choice='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):
+    return ''.join([random.choice(choice) for _ in range(length)])
+
 def randomNumber():
     return random.random()
 
