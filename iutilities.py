@@ -14,6 +14,8 @@ op = os.path
 import datetime
 import collections
 from os.path import curdir, join, abspath, splitunc, splitdrive, sep, pardir
+import imghdr
+import struct
 
 class memoize(object):
    '''Decorator. Caches a function's return value each time it is called.
@@ -41,6 +43,50 @@ class memoize(object):
    def __get__(self, obj, objtype):
       '''Support instance methods.'''
       return functools.partial(self.__call__, obj)
+
+def get_image_size(fname):
+    '''Determine the image type of fhandle and return its size.
+    from draco'''
+    with open(fname, 'rb') as fhandle:
+        head = fhandle.read(24)
+        if len(head) != 24:
+            return
+        if imghdr.what(fname) == 'png':
+            check = struct.unpack('>i', head[4:8])[0]
+            if check != 0x0d0a1a0a:
+                return
+            width, height = struct.unpack('>ii', head[16:24])
+        elif imghdr.what(fname) == 'gif':
+            width, height = struct.unpack('<HH', head[6:10])
+        elif imghdr.what(fname) in ['jpeg', 'jpg'] :
+            try:
+                fhandle.seek(0) # Read 0xff next
+                size = 2
+                ftype = 0
+                while not 0xc0 <= ftype <= 0xcf:
+                    fhandle.seek(size, 1)
+                    byte = fhandle.read(1)
+                    while ord(byte) == 0xff:
+                        byte = fhandle.read(1)
+                    ftype = ord(byte)
+                    size = struct.unpack('>H', fhandle.read(2))[0] - 2
+                # We are at a SOFn block
+                fhandle.seek(1, 1)  # Skip `precision' byte.
+                height, width = struct.unpack('>HH', fhandle.read(4))
+            except Exception as ex: #IGNORE:W0703
+                print str(ex)
+                return
+        else:
+            return
+        return width, height
+  
+def addFrameNumber(image, frame, outputImage=None):
+    res = get_image_size(image)
+    if not res:
+        raise RuntimeError, 'Could not find image resolution: %s'%image
+    if not outputImage:
+        outputImage = image
+    subprocess.call("R:\\Pipe_Repo\\Users\\Qurban\\applications\\ImageMagick\\convert.exe %s -draw \"text %s\" %s"%(image, str(res[0]/2)+','+str(res[1]/8) +" '%s'"%frame, " "+outputImage), shell=True)
 
 def paths_equal(path1, path2):
     return op.normpath(op.normcase(path1)) == op.normpath(op.normcase(path2))
