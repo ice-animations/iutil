@@ -98,6 +98,11 @@ def get_image_size(fname):
         else:
             return
         return width, height
+
+def resizeImage(image, size):
+    command = r"R:\Pipe_Repo\Users\Qurban\applications\ImageMagick\mogrify.exe "
+    command += ' -resize '+ size +' '+ image
+    subprocess.call(command, shell=True)
   
 def addFrameNumber(image, frame, outputImage=None):
     res = get_image_size(image)
