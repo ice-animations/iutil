@@ -5,8 +5,8 @@ from collections import namedtuple
 import subprocess
 
 
-from .ntfslink import symlinks as syml
-from .ntfslink import junctions as junc
+from ntfslink import symlinks as syml
+from ntfslink import junctions as junc
 
 
 symlinkdPattern = re.compile(r'^(?:.*)(?P<stype><SYMLINKD?>|<JUNCTION>)(?:\s+)(?P<name>.*)(?:\s+\[)'
@@ -98,7 +98,7 @@ def translatePath(path, maps=None, linkdir=None, reverse=False):
     :type maps: None or list of symlinkMapping
     :type linkdir: None or str
     '''
-    path = normpath(path)
+    path = normpath(path).lower()
     if maps is None:
         if linkdir is not None and os.path.exists(linkdir):
             maps = getSymlinks(linkdir)
@@ -108,15 +108,18 @@ def translatePath(path, maps=None, linkdir=None, reverse=False):
     for m in maps:
         linkpath = os.path.join(m.location, m.name)
 
-        tofind, toreplace = linkpath, m.target
+        tofind, toreplace = linkpath.lower(), m.target.lower()
         if reverse:
             tofind, toreplace = toreplace, tofind
         if path.startswith(tofind):
             return path.replace(tofind, toreplace, 1)
     return path
 
+def test():
+    maps = getSymlinks(r'\\dbserver\assets')
+    print translatePath('\\\\dbserver\\assets\\captain_khalfan\\02_production\\ep09\\assets\\character\\captain_khalfan_regular\\rig\\captain_khalfan_regular_rig.ma',
+            maps)
+
 
 if __name__ == '__main__':
-    maps = getSymlinks(r'\\dbserver\assets')
-    print translatePath(r'\\dbserver\assets\test_mansour_ep\assets\character',
-            maps)
+    test()
