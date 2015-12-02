@@ -16,6 +16,10 @@ import collections
 from os.path import curdir, join, abspath, splitunc, splitdrive, sep, pardir
 import imghdr
 import struct
+import csv
+import string # for get_drives
+import operator
+from ctypes import windll # for get_drives
 
 class memoize(object):
    '''Decorator. Caches a function's return value each time it is called.
@@ -43,6 +47,81 @@ class memoize(object):
    def __get__(self, obj, objtype):
       '''Support instance methods.'''
       return functools.partial(self.__call__, obj)
+  
+def getUsername():
+    return os.environ['USERNAME']
+
+def dictionaryToDetails(_dict, anl='Reason'):
+    '''converts a dictinary containing key values as strings to a string
+    each key value pair separated by \n and each item (key value) both separated
+    by \n\n'''
+    
+    return '\n\n'.join(['\n%s: '.join([key, value])%anl for key, value in _dict.items()])
+
+def splitPath(path):
+    '''splits a file or folder path and returns as a list
+    'D:/path/to/folder/or/file' -> ['D:', 'path', 'to', 'folder', 'or', 'file']
+    '''
+    components = [] 
+    while True:
+        (path,tail) = os.path.split(path)
+        if tail == "":
+            if path:
+                components.append(path)
+            components.reverse()
+            return components
+        components.append(tail)
+        
+def getCSVFileData(fileName):
+    '''returns list of tupples containing the csv file rows separated by comma'''
+    with open(fileName, 'rb') as csvfile:
+        tuples = list(csv.reader(csvfile, delimiter=','))
+    return tuples
+
+def basename(path, depth=3):
+    '''returns last 'depth' entries in a file or folder path as a string'''
+    return op.join(*splitPath(path)[-depth:])
+
+def dirname(path, depth=3):
+    '''removes last 'depth' entries from a file or folder path'''
+    return op.normpath(op.join(*splitPath(path)[:-depth]))
+
+def mkdir(path, dirs):
+    '''makes directories or folders recursively in a given path'''
+    for d in splitPath(dirs):
+        path = op.join(path, d)
+        try:
+            os.mkdir(path)
+        except:
+            pass
+
+def fileExists(path, fileName):
+    for name in os.listdir(path):
+        try:
+            if re.search(fileName+'_v\d{3}', name):
+                return True
+        except:
+            pass
+
+def getLastVersion(path, fileName, nxt=False):
+    versions = []
+    for version in os.listdir(path):
+        try:
+            versions.append(int(re.search('_v\d{3}', version).group().split('v')[-1]))
+        except AttributeError:
+            pass
+    if versions:
+        temp = max(versions) + 1 if nxt else max(versions)
+        return fileName +'_v'+ str(temp).zfill(3)
+    
+def get_drives():
+    drives = []
+    bitmask = windll.kernel32.GetLogicalDrives()
+    for letter in string.uppercase:
+        if bitmask & 1:
+            drives.append(letter)
+        bitmask >>= 1
+    return drives
   
 def onerror(func, path, exc_info):
     """
@@ -305,32 +384,32 @@ def localPath(path, localDrives):
 def normpath(path):
     return op.abspath(op.normpath(str(path)))
 
-def lowestConsecutiveUniqueFN(dirpath, basename, hasext = True, key = op.exists):
+def lowestConsecutiveUniqueFN(dirpath, bname, hasext = True, key = op.exists):
     ext = ""
     if hasext:
-        basename, ext = tuple(op.splitext(basename))
+        bname, ext = tuple(op.splitext(bname))
     else:
         pass
 
     # make unique name
-    if not key(op.join(dirpath, basename) + ext):
-        basename += ext
+    if not key(op.join(dirpath, bname) + ext):
+        bname += ext
 
     else:
         num = 1
         while(True):
             if key(op.join(dirpath,
-                           basename
+                           bname
                            + "_"
                            + str(num)) + ext):
                 num += 1
                 continue
             else:
 
-                basename = basename + "_" + str(num) + ext
+                bname = bname + "_" + str(num) + ext
                 break
 
-    return basename
+    return bname
 
 lCUFN = lowestConsecutiveUniqueFN
 
@@ -373,8 +452,8 @@ def numerateBN(bn, num=0, pat=fn_pattern):
     else:
         return bn + "_%d"%num
 
-def anyNameClash(dirpath, basenames, key=op.exists):
-    return any((key(op.join(dirpath, bn)) for bn in basenames))
+def anyNameClash(dirpath, bnames, key=op.exists):
+    return any((key(op.join(dirpath, bn)) for bn in bnames))
 
 def lowestConsecutiveUniqueFTN(dirpath, ftns, texs, key = op.exists):
     texs = list(texs)
@@ -487,8 +566,8 @@ def getSequenceFiles(filepath):
     '''
     filename = normpath(filepath)
     dirname = op.dirname(filename)
-    basename = op.basename(filename)
-    filename, filext = op.splitext(basename)
+    bname = op.basename(filename)
+    filename, filext = op.splitext(bname)
     res = re.match(r'^(.*?)(\D)(-?\d*)$', filename)
     if not res:
         #Cannot be part of sequence of files
@@ -548,9 +627,9 @@ udim_default_pattern = re.compile('^(?P<filename>[^<]*)(?P<ext>\\..*?)$')
 
 def detectUdim(filepath):
     filepath  = op.normpath(filepath)
-    basename = op.basename(filepath)
+    bname = op.basename(filepath)
     for name, pat in udim_detect_patterns.iteritems():
-        match = pat.match(basename)
+        match = pat.match(bname)
         if match:
             return name
 
@@ -558,9 +637,9 @@ def getUVTiles(filepath, filename_format='mari'):
     uvTiles = []
     filepath  = op.normpath(filepath)
     dirname  = op.dirname(filepath)
-    basename = op.basename(filepath)
+    bname = op.basename(filepath)
     udim_pattern = udim_patterns.get(filename_format, udim_default_pattern)
-    match = udim_pattern.match(basename)
+    match = udim_pattern.match(bname)
     if match:
         filename = match.group('filename')
         ext = match.group('ext')
@@ -577,8 +656,8 @@ def getTxFile(filepath, ext='tx'):
     '''
     filename = normpath(filepath)
     dirname  = op.dirname(filename)
-    basename = op.basename(filename)
-    filename, fileext = op.splitext(basename)
+    bname = op.basename(filename)
+    filename, fileext = op.splitext(bname)
     txPattern = re.compile(r'\.%s'%ext, re.IGNORECASE)
     if not txPattern.match(fileext):
         txFilename = op.join(dirname, filename + r'.%s'%ext)
