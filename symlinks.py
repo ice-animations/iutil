@@ -8,6 +8,8 @@ import subprocess
 from ntfslink import symlinks as syml
 from ntfslink import junctions as junc
 
+import re
+
 
 symlinkdPattern = re.compile(r'^(?:.*)(?P<stype><SYMLINKD?>|<JUNCTION>)(?:\s+)(?P<name>.*)(?:\s+\[)'
         r'(?P<target>.*)(?:\]\s*)$')
@@ -98,7 +100,7 @@ def translatePath(path, maps=None, linkdir=None, reverse=False):
     :type maps: None or list of symlinkMapping
     :type linkdir: None or str
     '''
-    path = normpath(path).lower()
+    path = normpath(path.strip())
     if maps is None:
         if linkdir is not None and os.path.exists(linkdir):
             maps = getSymlinks(linkdir)
@@ -108,11 +110,14 @@ def translatePath(path, maps=None, linkdir=None, reverse=False):
     for m in maps:
         linkpath = os.path.join(m.location, m.name)
 
-        tofind, toreplace = linkpath.lower(), m.target.lower()
+        tofind, toreplace = linkpath, m.target
         if reverse:
             tofind, toreplace = toreplace, tofind
-        if path.startswith(tofind):
-            return path.replace(tofind, toreplace, 1)
+
+        tofind = '^' + tofind.replace('\\', r'\\')
+        toreplace = toreplace.replace('\\', r'\\')
+        if re.search(tofind, path, re.IGNORECASE):
+            return re.sub(tofind, toreplace, path, 1, re.I)
     return path
 
 def test():
