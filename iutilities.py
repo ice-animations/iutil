@@ -55,8 +55,12 @@ def dictionaryToDetails(_dict, anl='Reason'):
     '''converts a dictinary containing key values as strings to a string
     each key value pair separated by \n and each item (key value) both separated
     by \n\n'''
-    
-    return '\n\n'.join(['\n%s: '.join([key, value])%anl for key, value in _dict.items()])
+    result = ''
+    for key, value in _dict.items():
+        if type(value) == type(list()):
+            value = '\n'.join(value)
+        result += '\n\n'.join(['\n%s: '.join([key, value])%anl ])
+    return result
 
 def splitPath(path):
     '''splits a file or folder path and returns as a list
