@@ -8,22 +8,18 @@ import subprocess
 from ntfslink import symlinks as syml
 from ntfslink import junctions as junc
 
-import re
-
-
 symlinkdPattern = re.compile(r'^(?:.*)(?P<stype><SYMLINKD?>|<JUNCTION>)(?:\s+)(?P<name>.*)(?:\s+\[)'
         r'(?P<target>.*)(?:\]\s*)$')
 
 symlinkMapping = namedtuple('symlinkMapping', 'location name target stype')
 
-
 def normpath(path):
+    ''' Convert path to a standardized format '''
     path = os.path.normpath(path)
     path = os.path.normcase(path)
     while path.endswith(os.sep):
         path = path[:-1]
     return path
-
 
 def getSymlinks2(dirpath):
     ''' get symlink mapping by popen method
@@ -94,37 +90,44 @@ def translateSymlink(path, maps=None):
     return path
 
 
-def translatePath(path, maps=None, linkdir=None, reverse=False):
+def translatePath(path, maps=None, linkdir=None, reverse=False, single=True):
     '''
     :type path: str
     :type maps: None or list of symlinkMapping
     :type linkdir: None or str
     '''
-    path = normpath(path.strip())
+    paths = []
+    path = normpath( path.strip() )
     if maps is None:
-        if linkdir is not None and os.path.exists(linkdir):
-            maps = getSymlinks(linkdir)
+        if linkdir is not None and os.path.exists( linkdir ):
+            maps = getSymlinks( linkdir )
         else:
             raise ValueError, 'linkdir is invalid'
 
     for m in maps:
-        linkpath = os.path.join(m.location, m.name)
+        linkpath = os.path.join( m.location, m.name )
 
         tofind, toreplace = linkpath, m.target
         if reverse:
             tofind, toreplace = toreplace, tofind
 
-        tofind = '^' + tofind.replace('\\', r'\\')
-        toreplace = toreplace.replace('\\', r'\\')
+        tofind = '^' + tofind.replace( '\\', r'\\' )
+        toreplace = toreplace.replace( '\\', r'\\' )
         if re.search(tofind, path, re.IGNORECASE):
-            return re.sub(tofind, toreplace, path, 1, re.I)
-    return path
+             newpath = re.sub( tofind, toreplace, path, 1, re.I )
+             paths.append( newpath )
+
+    if single:
+        return paths[0] if paths else path
+    else:
+        return paths
 
 def test():
-    maps = getSymlinks(r'\\dbserver\assets')
-    print translatePath('\\\\dbserver\\assets\\captain_khalfan\\02_production\\ep09\\assets\\character\\captain_khalfan_regular\\rig\\captain_khalfan_regular_rig.ma',
-            maps)
-
+    maps = getSymlinks( r'\\dbserver\assets' )
+    print translatePath( '\\\\dbserver\\assets\\captain_khalfan\\02_production'
+            '\\ep09\\assets\\character\\captain_khalfan_regular\\rig'
+            '\\captain_khalfan_regular_rig.ma', maps, single=False )
 
 if __name__ == '__main__':
     test()
+
