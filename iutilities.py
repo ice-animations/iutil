@@ -256,6 +256,12 @@ def relpath(path, start=curdir):
 
 op.relpath = relpath
 
+def isTempPath(path):
+    tempdir = tempfile.gettempdir()
+    if op.normpath(path).startswith(tempdir):
+        return True
+    return False
+
 def getTemp(mkd = False, suffix = "", prefix = "tmp", directory = None):
     tmp = getattr(tempfile,
                   "mkdtemp" if mkd else "mkstemp")(suffix = suffix,
