@@ -48,6 +48,17 @@ class memoize(object):
       '''Support instance methods.'''
       return functools.partial(self.__call__, obj)
   
+def getLatestFile(paths):
+    '''given a list of file paths, returns a file path having the
+    latest timestamp'''
+    latest = paths[0]
+    for path in paths[1:]:
+        print path, op.getmtime(path)
+        print latest, op.getmtime(latest)
+        if op.getmtime(path) > op.getmtime(latest):
+            latest = path
+    return latest
+  
 def getUsername():
     return os.environ['USERNAME']
 
