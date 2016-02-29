@@ -53,8 +53,6 @@ def getLatestFile(paths):
     latest timestamp'''
     latest = paths[0]
     for path in paths[1:]:
-        print path, op.getmtime(path)
-        print latest, op.getmtime(latest)
         if op.getmtime(path) > op.getmtime(latest):
             latest = path
     return latest
