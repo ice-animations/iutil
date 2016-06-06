@@ -48,6 +48,14 @@ class memoize(object):
       '''Support instance methods.'''
       return functools.partial(self.__call__, obj)
   
+def get_directory_size(start_path):
+    total_size = 0
+    for dirpath, _, filenames in os.walk(start_path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return round((total_size/1024)/1024, 1)
+  
 def getLatestFile(paths):
     '''given a list of file paths, returns a file path having the
     latest timestamp'''
