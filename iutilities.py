@@ -306,9 +306,10 @@ def getTemp(mkd = False, suffix = "", prefix = "tmp", directory = None):
                   "mkdtemp" if mkd else "mkstemp")(suffix = suffix,
                                                              prefix = prefix,
                                                              dir = directory)
-    tmp = tmp[0], getLongPathName(unicode(tmp[1]))
-    if mkd: return tmp
+    if mkd:
+        return getLongPathName(tmp)
     else:
+        tmp = tmp[0], getLongPathName(unicode(tmp[1]))
         os.close(tmp[0])
         return tmp[1]
 
