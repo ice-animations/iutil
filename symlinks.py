@@ -113,6 +113,8 @@ def translatePath(path, maps=None, linkdir=None, reverse=False, single=True):
         if reverse:
             tofind, toreplace = toreplace, tofind
 
+        tofind += '\\'
+        toreplace += '\\'
         tofind = '^' + tofind.replace( '\\', r'\\' )
         toreplace = toreplace.replace( '\\', r'\\' )
         if re.search(tofind, path, re.IGNORECASE):
