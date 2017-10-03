@@ -636,7 +636,7 @@ def getSequenceFiles(filepath):
     dirname = op.dirname(filename)
     bname = op.basename(filename)
     filename, filext = op.splitext(bname)
-    res = re.match(r'^(.*?)(\D)(-?\d*)$', filename)
+    res = re.match(r'^(.*?)(\D)(-?\d*|<f>)$', filename)
     if not res:
         #Cannot be part of sequence of files
        return []

@@ -1,18 +1,17 @@
-
 import re
 import os
 from collections import namedtuple
 import subprocess
 
-
 from ntfslink import symlinks as syml
 from ntfslink import junctions as junc
 
-
-symlinkdPattern = re.compile(r'^(?:.*)(?P<stype><SYMLINKD?>|<JUNCTION>)(?:\s+)(?P<name>.*)(?:\s+\[)'
-        r'(?P<target>.*)(?:\]\s*)$')
+symlinkdPattern = re.compile(
+    r'^(?:.*)(?P<stype><SYMLINKD?>|<JUNCTION>)(?:\s+)(?P<name>.*)(?:\s+\[)'
+    r'(?P<target>.*)(?:\]\s*)$')
 
 symlinkMapping = namedtuple('symlinkMapping', 'location name target stype')
+
 
 def normpath(path):
     ''' Convert path to a standardized format '''
@@ -22,6 +21,7 @@ def normpath(path):
         path = path[:-1]
     return path
 
+
 def getSymlinks2(dirpath):
     ''' get symlink mapping by popen method
     :type dirpath: str
@@ -30,14 +30,15 @@ def getSymlinks2(dirpath):
     dirpath = normpath(os.path.realpath(dirpath))
 
     if not os.path.exists(dirpath):
-        raise ValueError, "Directory %s does not exists" % dirpath
+        raise ValueError("Directory %s does not exists" % dirpath)
     if not os.path.isdir(dirpath):
-        raise ValueError, "%s is not a directory" % dirpath
+        raise ValueError("%s is not a directory" % dirpath)
 
     commandargs = ['dir']
-    commandargs.append('"%s"'%dirpath)
+    commandargs.append('"%s"' % dirpath)
     commandargs.append('/al')
-    pro = subprocess.Popen(' '.join(commandargs), shell=1, stdout=subprocess.PIPE)
+    pro = subprocess.Popen(
+        ' '.join(commandargs), shell=1, stdout=subprocess.PIPE)
 
     for line in pro.stdout.readlines():
         match = symlinkdPattern.match(line)
@@ -49,6 +50,7 @@ def getSymlinks2(dirpath):
         maps.append(symlinkMapping(dirpath, name, target, stype))
     return maps
 
+
 def getSymlinks(dirpath):
     ''' get symlink mappings by ctypes method
     :type dirpath: str
@@ -57,20 +59,20 @@ def getSymlinks(dirpath):
     dirpath = normpath(os.path.realpath(dirpath))
 
     if not os.path.exists(dirpath):
-        raise ValueError, "Directory %s does not exists" % dirpath
+        raise ValueError("Directory %s does not exists" % dirpath)
     if not os.path.isdir(dirpath):
-        raise ValueError, "%s is not a directory" % dirpath
+        raise ValueError("%s is not a directory" % dirpath)
 
     for name in os.listdir(dirpath):
         path = os.path.join(dirpath, name)
         if syml.check(path):
             maps.append(
-                    symlinkMapping(dirpath, name, normpath(syml.read(path)),
-                        '<SYMLINKD>'))
+                symlinkMapping(dirpath, name,
+                               normpath(syml.read(path)), '<SYMLINKD>'))
         elif junc.check(path):
             maps.append(
-                    symlinkMapping(dirpath, name, normpath(junc.read(path)),
-                        '<JUNCTION>'))
+                symlinkMapping(dirpath, name,
+                               normpath(junc.read(path)), '<JUNCTION>'))
 
     return maps
 
@@ -99,15 +101,15 @@ def translatePath(path, maps=None, linkdir=None, reverse=False, single=True):
     :type single: bool
     '''
     paths = []
-    path = os.path.normpath( path.strip() )
+    path = os.path.normpath(path.strip())
     if maps is None:
-        if linkdir is not None and os.path.exists( linkdir ):
-            maps = getSymlinks( linkdir )
+        if linkdir is not None and os.path.exists(linkdir):
+            maps = getSymlinks(linkdir)
         else:
-            raise ValueError, 'linkdir is invalid'
+            raise ValueError('linkdir is invalid')
 
     for m in maps:
-        linkpath = os.path.join( m.location, m.name )
+        linkpath = os.path.join(m.location, m.name)
 
         tofind, toreplace = linkpath, m.target
         if reverse:
@@ -115,23 +117,27 @@ def translatePath(path, maps=None, linkdir=None, reverse=False, single=True):
 
         tofind += '\\'
         toreplace += '\\'
-        tofind = '^' + tofind.replace( '\\', r'\\' )
-        toreplace = toreplace.replace( '\\', r'\\' )
+        tofind = '^' + tofind.replace('\\', r'\\')
+        toreplace = toreplace.replace('\\', r'\\')
         if re.search(tofind, path, re.IGNORECASE):
-             newpath = re.sub( tofind, toreplace, path, 1, re.I )
-             paths.append( newpath )
+            newpath = re.sub(tofind, toreplace, path, 1, re.I)
+            paths.append(newpath)
 
     if single:
         return paths[0] if paths else path
     else:
         return paths
 
+
 def test():
-    maps = getSymlinks( r'\\dbserver\assets' )
-    print translatePath( '\\\\dbserver\\assets\\captain_khalfan\\02_production'
-            '\\ep09\\assets\\character\\captain_khalfan_regular\\rig'
-            '\\captain_khalfan_regular_rig.ma', maps, single=False )
+    maps = getSymlinks(r'\\dbserver\assets')
+    print translatePath(
+        '\\\\dbserver\\assets\\captain_khalfan\\02_production'
+        '\\ep09\\assets\\character\\captain_khalfan_regular\\rig'
+        '\\captain_khalfan_regular_rig.ma',
+        maps,
+        single=False)
+
 
 if __name__ == '__main__':
     test()
-
