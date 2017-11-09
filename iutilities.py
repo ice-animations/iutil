@@ -751,46 +751,44 @@ def getSequenceFiles(filepath):
     ] if os.path.exists(dirname) else []
 
 
-def getUVTilePattern(filename, ext, filename_format='mari'):
+def getUVTilePattern(filename, ext, filename_format='mari', filename2=''):
     flags = re.I
     if os.name == 'posix':
         flags = 0
     if filename_format == 'mari':
-        return re.compile(('^' + filename + '(1\d{3})' + ext + '$').replace(
-            '.', '\\.'), flags)
+        return re.compile(('^' + filename + '(1\d{3})' + filename2 + ext +
+                          '$').replace('.', '\\.'), flags)
     elif filename_format == 'mudbox':
         return re.compile((
-            '^' + filename + '([uU][1-9]\d*_[vV][1-9]\d*)' + ext +
+            '^' + filename + '([uU][1-9]\d*_[vV][1-9]\d*)' + filename2 + ext +
             '$').replace('.', '\\.'), flags)
     elif filename_format == 'zbrush':
         return re.compile(
-            ('^' + filename + '([uU]\d+_[vV]\d+)' + ext + '$').replace(
-                '.', '\\.'), flags)
-    return re.compile(('^' + filename + ext + '$').replace('.', '\\.'), flags)
+            ('^' + filename + '([uU]\d+_[vV]\d+)' + filename2 + ext +
+                '$').replace('.', '\\.'), flags)
+    return re.compile(('^' + filename + filename2 + ext + '$').replace('.',
+                      '\\.'), flags)
 
 
 udim_patterns = {
-    'mari':
-    re.compile('^(?P<filename>[^<]*)(?:\<UDIM\>)?(?P<ext>\\..*?)$', re.I),
-    'zbrush':
-    re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?(?P<ext>\\..*?)$',
-               re.I),
-    'mudbox':
-    re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?(?P<ext>\\..*?)$',
-               re.I),
+    'mari': re.compile('^(?P<filename>[^<]*)(?:\<UDIM\>)?'
+                       '(?P<filename2>[^<]*)?(?P<ext>\\..*?)$', re.I),
+    'zbrush': re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?'
+                         '(?P<filename2>[^<]*)?(?P<ext>\\..*?)$', re.I),
+    'mudbox': re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?'
+                         '(?P<filename2>[^<]*)?(?P<ext>\\..*?)$', re.I),
 }
 
 udim_detect_patterns = {
-    'mari':
-    re.compile('^(?P<filename>[^<]*)(?:\<UDIM\>)(?P<ext>\\..*?)$', re.I),
-    'zbrush':
-    re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)(?P<ext>\\..*?)$',
-               re.I),
-    'mudbox':
-    re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)(?P<ext>\\..*?)$',
-               re.I),
+    'mari': re.compile('^(?P<filename>[^<]*)(?:\<UDIM\>)'
+                       '(?P<filename2>[^<]*)(?P<ext>\\..*?)$', re.I),
+    'zbrush': re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)'
+                         '(?P<filename2>[^<]*)(?P<ext>\\..*?)$', re.I),
+    'mudbox': re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)'
+                         '(?P<filename2>[^<]*)(?P<ext>\\..*?)$', re.I),
 }
-udim_default_pattern = re.compile('^(?P<filename>[^<]*)(?P<ext>\\..*?)$')
+udim_default_pattern = re.compile('^(?P<filename>[^<]*)(?P<filename2>[^<]*)'
+                                  '(?P<ext>\\..*?)$')
 
 
 def detectUdim(filepath):
@@ -812,7 +810,9 @@ def getUVTiles(filepath, filename_format='mari'):
     if match:
         filename = match.group('filename')
         ext = match.group('ext')
-        tile_pattern = getUVTilePattern(filename, ext, filename_format)
+        filename2 = match.group('filename2')
+        tile_pattern = getUVTilePattern(
+                filename, ext, filename_format, filename2)
         if op.exists(dirname):
             uvTiles = filter(op.exists, [
                 normpath(os.path.join(dirname, dbn))
