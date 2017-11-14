@@ -772,11 +772,11 @@ def getUVTilePattern(filename, ext, filename_format='mari', filename2=''):
 
 udim_patterns = {
     'mari': re.compile('^(?P<filename>[^<]*)(?:\<UDIM\>)?'
-                       '(?P<filename2>[^<]*)?(?P<ext>\\..*?)$', re.I),
+                       '(?P<filename2>[^<]*)(?P<ext>\\..*?)$', re.I),
     'zbrush': re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?'
-                         '(?P<filename2>[^<]*)?(?P<ext>\\..*?)$', re.I),
+                         '(?P<filename2>[^<]*)(?P<ext>\\..*?)$', re.I),
     'mudbox': re.compile('^(?P<filename>[^<]*)(?:[uU]\<U\>_[vV]\<V\>)?'
-                         '(?P<filename2>[^<]*)?(?P<ext>\\..*?)$', re.I),
+                         '(?P<filename2>[^<]*)(?P<ext>\\..*?)$', re.I),
 }
 
 udim_detect_patterns = {
