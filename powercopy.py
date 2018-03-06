@@ -15,7 +15,7 @@ _cred = os.path.join(__mydir__, '.pccred')
 _mod = 'copyallfiles.py'
 
 module = os.path.join(os.path.realpath(__mydir__), _mod)
-executable = r"R:\Pipe_Repo\Users\Qurban\applications\Python26\pythonw.exe"
+executable = r"R:\Pipe_Repo\Users\Qurban\applications\Python27\pythonw.exe"
 
 maps = getNetworkMaps()
 module = translateMappedtoUNC(module, maps)
@@ -24,19 +24,17 @@ executable = translateMappedtoUNC(executable, maps)
 
 class PowerCopyError(Exception):
     def __init__(self, errorcode, command):
-        self.errorcode=errorcode
-        self.command=command
-        self.strerror=os.strerror(errorcode)
+        self.errorcode = errorcode
+        self.command = command
+        self.strerror = os.strerror(errorcode)
+
     def __str__(self):
-        return "Error code '%d' in copy process %s\nreason: %s"%(self.errorcode, self.command,
-                self.strerror)
+        return "Error code '%d' in copy process %s\nreason: %s" % (
+            self.errorcode, self.command, self.strerror)
 
 
-def _getLoginData(fn=_cred):
-    dom, us, pw = [None] * 3
-    with open(fn) as f:
-        dom, us, pw = f.read().decode('base64').encode('rot_13').split('\n')
-    return dom, us, pw
+def _getImpersonationData():
+    return 'iceanimations.com', 'tactic', 'tactic123'
 
 
 def cmdargEscape(arg):
@@ -44,13 +42,13 @@ def cmdargEscape(arg):
         arg = arg[:-1]
     arg = arg.replace('"', r'\"')
     if arg.find(' ') >= 0:
-        arg = '"%s"'%arg
+        arg = '"%s"' % arg
     return arg
 
 
 def powercopy(fromdir, todir, tree=False):
 
-    dom, us, pw = _getLoginData()
+    dom, us, pw = _getImpersonationData()
 
     commandargs = []
     commandargs.append(cmdargEscape(executable))
@@ -78,6 +76,7 @@ def powercopy(fromdir, todir, tree=False):
         raise PowerCopyError(exitcode, command)
     return exitcode
 
+
 def test_powercopy():
     import time
     todir = r'\\nasx\Storage\Projects\external\Al_Mansour_Season_02\test_run\assets\environment\ep_16\testEnv'
@@ -86,10 +85,11 @@ def test_powercopy():
 
     k = time.time()
     powercopy(fromdir, todir)
-    logger.debug( time.time() - k )
+    logger.debug(time.time() - k)
 
     import subprocess
-    subprocess.call("start explorer %s"%todir, shell=1)
+    subprocess.call("start explorer %s" % todir, shell=1)
+
 
 if __name__ == '__main__':
     test_powercopy()

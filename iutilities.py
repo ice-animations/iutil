@@ -140,6 +140,20 @@ def mkdir(path, dirs):
             pass
 
 
+def mkdirr(path, mode=0777):
+    '''A Wrapper on os.mkdir recursively ensures the existance of parent
+    directories before making the given directory'''
+
+    if os.path.exists(path):
+        if not os.path.isdir(path):
+            raise ValueError('%s is a non-directory' % path)
+    else:
+        parent_dir = os.path.dirname(path)
+        if parent_dir:
+            mkdirr(parent_dir, mode)
+        os.mkdir(path)
+
+
 def fileExists(path, fileName):
     for name in os.listdir(path):
         try:
